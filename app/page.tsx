@@ -8,6 +8,7 @@ import { ResultDisplay } from "@/components/ResultDisplay";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const REQUEST_TIMEOUT_MS = 30_000;
+const ANIMATION_TIMEOUT_MS = 60_000;
 
 type ErrorEntry = {
   id: string;
@@ -20,6 +21,7 @@ type ErrorEntry = {
 type FalSuccessResponse = {
   imageUrl: string;
   requestId: string;
+  originalImageUrl: string;
 };
 
 function generateId() {
@@ -35,6 +37,13 @@ export default function Home() {
   const [prompt, setPrompt] = useState("");
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [requestId, setRequestId] = useState<string | null>(null);
+  const [originalImageUrl, setOriginalImageUrl] = useState<string | null>(null);
+  const [animationPrompt, setAnimationPrompt] = useState<string | null>(null);
+  const [animationModel, setAnimationModel] = useState<string | null>(null);
+  const [animationUrl, setAnimationUrl] = useState<string | null>(null);
+  const [animationRequestId, setAnimationRequestId] = useState<string | null>(null);
+  const [isPromptLoading, setIsPromptLoading] = useState(false);
+  const [isAnimationLoading, setIsAnimationLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errors, setErrors] = useState<ErrorEntry[]>([]);
@@ -76,6 +85,11 @@ export default function Home() {
       setSelectedFile(file);
       setResultUrl(null);
       setRequestId(null);
+      setAnimationPrompt(null);
+      setAnimationModel(null);
+      setAnimationUrl(null);
+      setAnimationRequestId(null);
+      setOriginalImageUrl(null);
 
       if (!file) {
         resetPreview();
@@ -122,6 +136,13 @@ export default function Home() {
     setStatusMessage("Contacting Fal.ai…");
     setResultUrl(null);
     setRequestId(null);
+    setAnimationPrompt(null);
+    setAnimationModel(null);
+    setAnimationUrl(null);
+    setAnimationRequestId(null);
+    setOriginalImageUrl(null);
+    setIsPromptLoading(false);
+    setIsAnimationLoading(false);
 
     const controller = new AbortController();
     const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
@@ -158,16 +179,17 @@ export default function Home() {
       const data = (await response.json()) as FalSuccessResponse;
       setResultUrl(data.imageUrl);
       setRequestId(data.requestId);
+      setOriginalImageUrl(data.originalImageUrl);
     } catch (error) {
       if ((error as Error).name === "AbortError") {
         pushError("Request timed out after 30 seconds (client timeout).");
       } else {
         pushError("Network error while submitting request.", String(error));
       }
+      setStatusMessage(null);
     } finally {
       clearTimeout(timeout);
       setIsLoading(false);
-      setStatusMessage(null);
     }
   }, [isLoading, prompt, pushError, selectedFile]);
 
@@ -176,6 +198,13 @@ export default function Home() {
     setPrompt("");
     setResultUrl(null);
     setRequestId(null);
+    setAnimationPrompt(null);
+    setAnimationModel(null);
+    setAnimationUrl(null);
+    setAnimationRequestId(null);
+    setOriginalImageUrl(null);
+    setIsPromptLoading(false);
+    setIsAnimationLoading(false);
     resetPreview();
   }, [resetPreview]);
 
@@ -183,7 +212,139 @@ export default function Home() {
     setResultUrl(null);
     setRequestId(null);
     setPrompt("");
+    setAnimationPrompt(null);
+    setAnimationModel(null);
+    setAnimationUrl(null);
+    setAnimationRequestId(null);
+    setIsPromptLoading(false);
+    setIsAnimationLoading(false);
   }, []);
+
+  const handleGenerateAnimation = useCallback(async () => {
+    if (isPromptLoading || isAnimationLoading) {
+      return;
+    }
+
+    if (!originalImageUrl || !resultUrl) {
+      pushError("Run a haircut first before generating the animation.");
+      return;
+    }
+
+    setIsPromptLoading(true);
+    setAnimationPrompt(null);
+    setAnimationModel(null);
+    setAnimationUrl(null);
+    setAnimationRequestId(null);
+    setStatusMessage("Crafting animation prompt…");
+
+    let generatedPrompt = "";
+
+    try {
+      const promptResponse = await fetch("/api/generate-animation-prompt", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          originalUrl: originalImageUrl,
+          resultUrl,
+          userPrompt: prompt.trim(),
+        }),
+      });
+
+      if (!promptResponse.ok) {
+        let payload: unknown = null;
+
+        try {
+          payload = await promptResponse.json();
+        } catch (error) {
+          payload = { message: String(error) };
+        }
+
+        const errorMessage =
+          (payload && typeof payload === "object" && "error" in payload && typeof (payload as Record<string, unknown>).error === "string"
+            ? (payload as Record<string, unknown>).error as string
+            : `Prompt request failed with status ${promptResponse.status}`);
+
+        pushError(errorMessage, payload, promptResponse.status);
+        return;
+      }
+
+      const promptData = (await promptResponse.json()) as {
+        prompt: string;
+        model?: string;
+      };
+      generatedPrompt = promptData.prompt;
+      setAnimationPrompt(generatedPrompt);
+      setAnimationModel(promptData.model ?? null);
+    } catch (error) {
+      pushError("Network error while generating animation prompt.", String(error));
+      return;
+    } finally {
+      setIsPromptLoading(false);
+    }
+
+    if (!generatedPrompt) {
+      setStatusMessage(null);
+      return;
+    }
+
+    setIsAnimationLoading(true);
+    setStatusMessage("Creating your transformation video…");
+
+    const animationController = new AbortController();
+    const animationTimeout = window.setTimeout(() => animationController.abort(), ANIMATION_TIMEOUT_MS);
+
+    try {
+      const animationResponse = await fetch("/api/generate-animation", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          originalUrl: originalImageUrl,
+          resultUrl,
+          animationPrompt: generatedPrompt,
+        }),
+        signal: animationController.signal,
+      });
+
+      if (!animationResponse.ok) {
+        let payload: unknown = null;
+
+        try {
+          payload = await animationResponse.json();
+        } catch (error) {
+          payload = { message: String(error) };
+        }
+
+        const errorMessage =
+          (payload && typeof payload === "object" && "error" in payload && typeof (payload as Record<string, unknown>).error === "string"
+            ? (payload as Record<string, unknown>).error as string
+            : `Animation request failed with status ${animationResponse.status}`);
+
+        pushError(errorMessage, payload, animationResponse.status);
+        return;
+      }
+
+      const animationData = (await animationResponse.json()) as {
+        animationUrl: string;
+        animationRequestId: string;
+      };
+      setAnimationUrl(animationData.animationUrl);
+      setAnimationRequestId(animationData.animationRequestId);
+    } catch (error) {
+      if ((error as Error).name === "AbortError") {
+        pushError("Animation request timed out after 60 seconds.");
+      } else {
+        pushError("Network error while generating animation.", String(error));
+      }
+    } finally {
+      clearTimeout(animationTimeout);
+      setIsAnimationLoading(false);
+      setStatusMessage(null);
+    }
+  }, [isPromptLoading, isAnimationLoading, originalImageUrl, prompt, pushError, resultUrl]);
 
   useEffect(() => {
     return () => {
@@ -193,7 +354,10 @@ export default function Home() {
     };
   }, []);
 
-  const hasActiveResult = useMemo(() => Boolean(previewUrl || resultUrl), [previewUrl, resultUrl]);
+  const hasActiveResult = useMemo(
+    () => Boolean(previewUrl || resultUrl || animationPrompt || animationUrl),
+    [animationPrompt, animationUrl, previewUrl, resultUrl],
+  );
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-10 px-4 py-12 sm:px-6 lg:px-8">
@@ -271,7 +435,6 @@ export default function Home() {
           <ImageUpload
             onImageSelected={handleImageSelected}
             onError={handleImageError}
-            previewUrl={previewUrl}
             disabled={isLoading}
           />
 
@@ -310,6 +473,13 @@ export default function Home() {
             originalImage={previewUrl}
             resultImage={resultUrl}
             requestId={requestId}
+            animationPrompt={animationPrompt}
+            animationModel={animationModel}
+            animationUrl={animationUrl}
+            animationRequestId={animationRequestId}
+            isPromptLoading={isPromptLoading}
+            isAnimationLoading={isAnimationLoading}
+            onGenerateAnimation={handleGenerateAnimation}
             isLoading={isLoading}
             onTryAnother={handleTryAnother}
             onReset={handleReset}

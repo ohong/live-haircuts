@@ -16,13 +16,14 @@ Live Haircuts is a single-page Next.js app that lets you upload a selfie, descri
    npm install
    ```
 
-2. Create a `.env.local` file in the project root and add your Fal credentials:
+2. Create a `.env.local` file in the project root and add your API credentials:
 
    ```bash
    FAL_AI_API_KEY=your-secret-key-here
+   ANTHROPIC_API_KEY=your-anthropic-key-here
    ```
 
-   The app loads this value on the server when calling Fal.ai. Never commit the key to source control.
+   The app loads these values on the server when calling Fal.ai and Anthropic. Never commit the keys to source control.
 
 3. Run the development server:
 
@@ -38,12 +39,17 @@ Live Haircuts is a single-page Next.js app that lets you upload a selfie, descri
 - Prompt input with helpful placeholders and strict 200-character limit
 - Persistent error log that surfaces validation, network, and Fal.ai errors for debugging
 - 30-second timeout guard on both client and server
-- Fal.ai integration via `/api/generate-haircut` API route, including secure upload via Fal storage
-- Side-by-side before/after comparison plus quick retry and reset actions
+- Fal.ai integration via `/api/generate-haircut` for nano-banana edits and `/api/generate-animation-prompt` for Claude Sonnet prompt synthesis
+- "See it live" currently generates the Kling-ready prompt (model + text) and surfaces it in the UI; video rendering is stubbed for now
+- Side-by-side before/after comparison plus quick retry, reset, and a rendered animation of the transformation
 
 ## Fal.ai Integration Notes
 
-The app uses `@fal-ai/client` on the server to upload your image to Fal storage and enqueue a `fal-ai/nano-banana/edit` job. Update `lib/fal-client.ts` if you need to adjust credentials or add logging. The API route lives at `app/api/generate-haircut/route.ts`.
+The app uses `@fal-ai/client` and `@anthropic-ai/sdk` on the server to:
+
+- Upload your image to Fal storage and enqueue a `fal-ai/nano-banana/edit` job (`app/api/generate-haircut/route.ts`).
+- Craft an animation prompt with Claude Sonnet (`app/api/generate-animation-prompt/route.ts`), feeding in the before/after frames plus the instructions in `prompts.md`.
+- Return a formatted Kling 2.5 Turbo prompt when the user clicks "See it live" (`app/api/generate-animation-prompt/route.ts`). The actual video call is temporarily disabled/stubbed.
 
 ## Deployment
 

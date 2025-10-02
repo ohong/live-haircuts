@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import type { ChangeEvent, DragEvent } from "react";
 import { useCallback, useRef, useState } from "react";
 
@@ -16,14 +15,12 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024;
 type ImageUploadProps = {
   onImageSelected: (file: File | null) => void;
   onError: (message: string) => void;
-  previewUrl: string | null;
   disabled?: boolean;
 };
 
 export function ImageUpload({
   onImageSelected,
   onError,
-  previewUrl,
   disabled = false,
 }: ImageUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
@@ -137,19 +134,6 @@ export function ImageUpload({
           disabled={disabled}
         />
       </label>
-
-      {previewUrl ? (
-        <div className="overflow-hidden rounded-xl border bg-white shadow-sm">
-          <Image
-            src={previewUrl}
-            alt="Uploaded preview"
-            width={768}
-            height={768}
-            className="h-64 w-full object-cover"
-            unoptimized
-          />
-        </div>
-      ) : null}
     </div>
   );
 }

@@ -10,6 +10,7 @@ export const maxDuration = 30;
 type FalSuccessResponse = {
   imageUrl: string;
   requestId: string;
+  originalImageUrl: string;
 };
 
 function extractImageUrl(payload: unknown): string | null {
@@ -165,6 +166,7 @@ export async function POST(req: NextRequest) {
     const response: FalSuccessResponse = {
       imageUrl,
       requestId,
+      originalImageUrl: uploadedImageUrl,
     };
 
     return NextResponse.json(response, {
