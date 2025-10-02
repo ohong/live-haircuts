@@ -7,7 +7,7 @@ const ANTHROPIC_MODEL = "claude-sonnet-4-20250514";
 const MAX_OUTPUT_TOKENS = 600;
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 let cachedPromptTemplate: string | null = null;
 

@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { ApiError, getFalClient } from "@/lib/fal-client";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-const REQUEST_TIMEOUT_MS = 30_000;
+const REQUEST_TIMEOUT_MS = 120_000;
 
 export const runtime = "nodejs";
-export const maxDuration = 30;
+export const maxDuration = 120;
 
 type FalSuccessResponse = {
   imageUrl: string;
@@ -177,7 +177,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     if ((error as Error).name === "AbortError") {
-      return createErrorResponse("Request timed out after 30 seconds.", 504);
+      return createErrorResponse("Request timed out after 120 seconds.", 504);
     }
 
     if (error instanceof ApiError) {

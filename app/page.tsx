@@ -7,8 +7,8 @@ import { PromptInput } from "@/components/PromptInput";
 import { ResultDisplay } from "@/components/ResultDisplay";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
-const REQUEST_TIMEOUT_MS = 30_000;
-const ANIMATION_TIMEOUT_MS = 60_000;
+const REQUEST_TIMEOUT_MS = 120_000;
+const ANIMATION_TIMEOUT_MS = 120_000;
 
 type ErrorEntry = {
   id: string;
@@ -182,7 +182,7 @@ export default function Home() {
       setOriginalImageUrl(data.originalImageUrl);
     } catch (error) {
       if ((error as Error).name === "AbortError") {
-        pushError("Request timed out after 30 seconds (client timeout).");
+        pushError("Request timed out after 120 seconds (client timeout).");
       } else {
         pushError("Network error while submitting request.", String(error));
       }
@@ -335,7 +335,7 @@ export default function Home() {
       setAnimationRequestId(animationData.animationRequestId);
     } catch (error) {
       if ((error as Error).name === "AbortError") {
-        pushError("Animation request timed out after 60 seconds.");
+        pushError("Animation request timed out after 120 seconds.");
       } else {
         pushError("Network error while generating animation.", String(error));
       }
@@ -464,7 +464,7 @@ export default function Home() {
               <div className="mb-4 inline-flex h-12 w-12 animate-spin rounded-full border-4 border-sky-400 border-t-transparent" aria-hidden />
               <p className="text-base font-semibold text-zinc-700">Working on your new look…</p>
               <p className="mt-2 text-sm text-zinc-500">
-                This usually wraps up in under 30 seconds. Hang tight!
+                This usually takes 30-90 seconds. Hang tight!
               </p>
             </div>
           ) : null}

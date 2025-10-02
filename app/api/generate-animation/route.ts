@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { ApiError, getFalClient } from "@/lib/fal-client";
 
-const ANIMATION_TIMEOUT_MS = 60_000;
+const ANIMATION_TIMEOUT_MS = 120_000;
 const ANIMATION_NEGATIVE_PROMPT = "--no text, watermark, distortion, artifacts, flickering";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 type AnimationSuccessResponse = {
   animationUrl: string;
@@ -155,7 +155,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     if ((error as Error).name === "AbortError") {
-      return createErrorResponse("Animation request timed out after 60 seconds.", 504);
+      return createErrorResponse("Animation request timed out after 120 seconds.", 504);
     }
 
     if (error instanceof ApiError) {

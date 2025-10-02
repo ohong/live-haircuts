@@ -74,8 +74,8 @@ Live Haircuts is a single-page web application that transforms user photos with 
 - Network failures: Display response status and message
 - API errors: Show error response verbatim (Fal.ai, Anthropic)
 - Timeout handling: 
-  - 30-second maximum for haircut generation
-  - 60-second maximum for animation prompt and video generation
+  - 120-second maximum for haircut generation
+  - 120-second maximum for animation prompt and video generation
 - No automatic retries
 
 ### Constraints & Exclusions
@@ -111,6 +111,6 @@ prompts.md (animation prompt template for Claude)
 ## Success Criteria
 The MVP succeeds when a user can:
 1. Upload their photo and describe a haircut
-2. See the AI-generated result alongside their original image within 30 seconds
+2. See the AI-generated result alongside their original image within 120 seconds
 3. Click a button to generate an animated video transformation
-4. View the complete before-to-after video animation within 90 seconds total
+4. View the complete before-to-after video animation within 120 seconds total
